@@ -17,7 +17,7 @@
 package mysenses;
 
 /**
- * Object to listen for a sense.
+ * Organ to listen for a sense.
  * @author 12420165G
  */
 public class Ear extends Organ {
@@ -30,4 +30,15 @@ public class Ear extends Organ {
         this.setSense(new Console());
     }
     
+    /**
+     * Listen.
+     */
+    public void listen() throws Exception {
+        if (this.getSense() == null) {
+            throw new Exception("No sense...");
+        }
+        
+        Thread t = new Thread((Runnable) this.getSense());
+        t.start();
+    }
 }

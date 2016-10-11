@@ -17,8 +17,6 @@
 package mybrain;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import mysenses.*;
 
 /**
@@ -27,14 +25,20 @@ import mysenses.*;
  */
 public class Brain extends Organ {
     /**
-     * @var String data
+     * @var String the data received
      */
-    private byte[] data = null;
+    private byte[][] dataInput = null;
     
     /**
-     * @var String response of the brain
+     * @var double percentage of similarity between data input and matrix of 
+     * "neurons"
      */
-    private String response = null;
+    private double percentSimilarity;
+    /**
+     * @var zero-ones matrix result of comparation between data input and matrix 
+     * of "neurons"
+     */
+    private byte[][] matrixSimilarity = null;
     
     /**
      * Constructor.
@@ -46,110 +50,170 @@ public class Brain extends Organ {
     /**
      * @return the data
      */
-    public byte[] getData() {
-        return data;
+    public byte[][] getDataInput() {
+        return dataInput;
+    }
+    
+    /**
+     * Returns the data input in string format.
+     * @return 
+     */
+    public String getStringFromBytes(byte[] bytes) {
+        return new String(bytes);
     }
 
     /**
-     * Catch data, transform and process.
+     * Catch data as string, transform to bytes and process.
      * @param data the data to set
      */
-    public void setData(String data) {
-        this.data = data.getBytes();
+    public void setData(String data) throws Exception {
+        this.dataInput = new byte[1][];
+        this.dataInput[0] = data.getBytes(); // transform input text into byte[]
         this.processData();
     }
 
     /**
-     * @return the response
+     * Process the data (this.data) received and returns a response.
      */
-    public String getResponse() {
-        return response;
-    }
-
-    /**
-     * @param response the response to set
-     */
-    private void setResponse(String response) {
-        this.response = response;
-    }
-    
-    /**
-     * Process the data received and returns a response.
-     */
-    private void processData() {
-        ArrayList<Neuron> n = Brain.getNeuronNet(this.data);
+    private void processData() throws Exception {
+        Mouth mouth = new Mouth();
         
-        // search a pattern in the memory
-        ArrayList<Neuron> result = this.compareNeuronPattern(n);
+        try {
+            // search a pattern in the memory
+            this.compareNeuronPattern();
+        } catch (Exception ex) {
+            mouth.speak(ex.getMessage());
+        }
         
-        // TODO: diferentes tipos de salida según la acción
-        this.setSense(new Console());
-        Console s = (Console) this.getSense();
+        // action
+        switch (Instinct.getInstinct(this.percentSimilarity)) {
 
-        // if matches a pattern
-        if (result != null) {
-            // action
-            s.type(Arrays.toString(this.data));
-        } else {
-            // action if not have a result
-            this.setResponse(Arrays.toString(this.data));
-            s.type(Arrays.toString(this.data));
+            case Instinct.CURIOSITY:
+                try {
+                    MemoryIO.setMemory(dataInput);
+                    
+                    // CURIOSITY try things from obtains a response and if it's good save it
+                    mouth.speak(getStringFromBytes(this.dataInput[0]));
+                    Ear ear = new Ear();
+                    ear.listen();
+                    
+                } catch (IOException ex) {
+                    mouth.speak(ex.getMessage());
+                }    
+                break;
+
+            case Instinct.IMITATION: 
+                mouth.speak(getStringFromBytes(this.dataInput[0]));
+                break;
+
+            case Instinct.ACTION: break;
+
+            case Instinct.EMPATHY: break;
         }
     }
     
     /**
-     * Compare patterns of neuron nets.
+     * Compare patterns of "neuron nets"(matrices).
      * @param n the neuron net to compare with the memory
-     * @return null|ArrayList<Neuron> memory neuron net matches or null if error
+     * @return null|byte[][] a matrix with the result of comparation with the memory
+     * @throws IOException
      */
-    private ArrayList<Neuron> compareNeuronPattern(ArrayList<Neuron> n) {
-        // get memory neuron net
-        ArrayList<Neuron> memoryNeuronNet = new ArrayList<>();
-        try {
-            byte[] memory = MemoryIO.getMemory();
-            
-            // create de the neuron net of the memory
-            memoryNeuronNet = Brain.getNeuronNet(memory);
-            
-        } catch (IOException ex) {
-            return null;
+    private void compareNeuronPattern() throws IOException, Exception {
+        // the memory is returned in a matrix of bidimensional matrices
+        byte[][][] memory;
         
-        } finally {
+        memory = MemoryIO.getMemory(this.dataInput.length, this.dataInput[0].length);
+        
+        if (memory == null) {
+            if(memory[0] == null) {
+            throw new Exception("Memory unreachable");
+        }}
+        
+        // contains the percentage of siliraty
+        int percent = 0;
+        
+        // for each matrix of the "memory" compare with the data received
+        for (byte[][] matrix : memory) {
+            try {
+                this.compareMatrixEquallyOperation(matrix, this.dataInput);
+            } catch (Exception ex) {
+                // the matrices are not the same dimensions
+                continue;
+            }
             
-
-            // compare memory with neuron pattern got of the data received
-            if (!n.equals(memoryNeuronNet)) {
-                // if not equals save the new data in memory
-                try {
-                    MemoryIO.setMemory(this.data);
-                } catch (IOException ex) {
-                    return null;
-                }
+            // get out of iteration if we have 100% of similarity
+            if (this.percentSimilarity == 100) {
+                break;
+            }
+        }
+    }
+    
+    /**
+     * 
+     * @param bytes
+     * @return 
+     */
+    public static double[] bytesToDouble(byte[] bytes) {
+        double[] doubles = new double[bytes.length];
+        
+        for (int i = 0; i < bytes.length; i++) {
+            doubles[i] = (double) bytes[i];
+        }
+        
+        return doubles;
+    }
+    
+    /**
+     * 
+     * @param bytes
+     * @return 
+     */
+    public static double[][] bytesToDouble(byte[][] bytes) {
+        double[][] doubles = new double[bytes.length][];
+        
+        for (int i = 0; i < bytes.length; i++) {
+            for (int j = 0; j < bytes[i].length; j++) {
+                //doubles[i][j] = (double) bytes[i][j];
+                doubles[i] = Brain.bytesToDouble(bytes[i]);
             }
         }
         
-        return n;
+        return doubles;
     }
     
     /**
-     * Create a net of neurons with data received.
-     * @param data
-     * @return ArrayList<Neuron> Neuron net.
+     * Get two matrix, compare both and return a matrix with zero-ones. Each one
+     * represents that this position has the same value in both matrices.
+     * @return a matrix zero-ones with the result
+     * @return null if the dimensions not are equall
      */
-    public static ArrayList<Neuron> getNeuronNet(byte[] data) {
-        // array of conected neurons
-        ArrayList<Neuron> n = new ArrayList<Neuron>();
-        
-        // Add a neuron to the array setting the portion(byte) of data
-        for (byte b : data) {
-            boolean add = n.add(new Neuron(b));
+    private void compareMatrixEquallyOperation(byte[][] a, byte[][] b) throws Exception {
+        if (a.length != b.length || a[0].length != b[0].length) {
+            throw new Exception("The matrices are not the same dimensions");
         }
         
-        // Add net of neurons to all neurons for each one knows about his conections
-        n.stream().forEach((next) -> {
-            next.setNeuronsConected(n);
-        });
+        byte[][] result = new byte[a.length][a[0].length];
         
-        return n;
+        int ones = 0;
+        
+        for (int i = 0; i < a.length; i++) {
+            
+            for (int j = 0; j < a[0].length; j++) {
+                
+                byte dato_a = a[i][j];
+                byte dato_b = b[i][j];
+                
+                if (dato_a == dato_b) {
+                    result[i][j] = 1;
+                    ones++;
+                } else {
+                    result[i][j] = 0;
+                }
+                
+            }
+        }
+        
+        this.percentSimilarity = ones * 100 / (a.length * a[0].length);
+        this.matrixSimilarity = result;
     }
 }

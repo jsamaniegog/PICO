@@ -40,8 +40,13 @@ public class Console extends Sense implements Runnable {
      */
     @Override
     public void run() {
-        //this.ask(ResourceBundle.getBundle("language").getString("ask"));
-        this.sendToBrain(this.ask(": "));
+        try {
+            //this.ask(ResourceBundle.getBundle("language").getString("ask"));
+            this.sendToBrain(this.ask(": "));
+        
+        } catch (Exception ex) {
+            this.type(ex.getMessage());
+        }
     }
     
     /**

@@ -16,30 +16,36 @@
  */
 package mybrain;
 
-import java.util.ArrayList;
-
 /**
  * Manage the primary instincts.
  * @author 12420165G
  */
 public class Instinct {
+    final static int CURIOSITY = 0;
+    final static int IMITATION = 1;
+    final static int ACTION    = 2;
+    final static int EMPATHY   = 3;
     
-    final int IMITATION = 0;
-    final int EMPATHY   = 1;
-    final int CURIOSITY = 2;
-    
-    /**
-     * Constructor.
-     */
-    public Instinct() {
-        
+    private static boolean isBetween(double x, double lower, double upper) {
+        return lower <= x && x <= upper;
     }
     
     /**
-     * 
-     * @param n 
+     * Returns an instinct according to a percentage of similarity
+     * @param percentage of similarity
+     * @return 
      */
-    public void imitationInstinct(ArrayList<Neuron> n) {
+    public static int getInstinct(double percentage) {
+        if (isBetween(percentage, 90, 100)) {
+            return IMITATION;
         
-    }
+        } else {
+            if (percentage == 0) {
+                return CURIOSITY;
+            }
+            
+            // by default
+            return IMITATION;
+        }
+    }    
 }

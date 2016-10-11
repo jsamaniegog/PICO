@@ -60,11 +60,10 @@ public abstract class Sense {
     }
     
     /**
-     * Send information to the brain.
+     * Send information (and the control) to the brain.
      * @param data 
      */
-    public void sendToBrain(String data) {
+    public void sendToBrain(String data) throws Exception {
         this.brain.setData(data);
-        this.brain.getResponse();
     }
 }

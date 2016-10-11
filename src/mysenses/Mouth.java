@@ -17,33 +17,24 @@
 package mysenses;
 
 /**
- *
+ * Organ to speak for a sense.
  * @author 12420165G
  */
-public class Organ {
-    /**
-     * @var Object contains a sense.
-     */
-    protected Object sense = null;
-
+public class Mouth extends Organ {
     /**
      * Construct.
      */
-    public Organ() {
-        
+    public Mouth() {
+        super();
+        this.setSense(new Console());
     }
     
-    /**
-     * @return the sense
-     */
-    public Object getSense() {
-        return this.sense;
-    }
-
-    /**
-     * @param aSense the sense to set
-     */
-    public void setSense(Object aSense) {
-        this.sense = aSense;
+    public void speak(String text) throws Exception {
+        if (this.getSense() == null) {
+            throw new Exception("No sense...");
+        }
+        
+        Console s = (Console) this.getSense();
+        s.type(text);
     }
 }
